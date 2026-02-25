@@ -19,7 +19,7 @@ https://github.com/zml/zml
 thank you for all  contributors
 
 
-
+zig run on
 
 win 11
 
