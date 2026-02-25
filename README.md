@@ -17,3 +17,12 @@ https://github.com/zml/zml
 
 
 thank you for all  contributors
+
+
+
+
+win 11
+
+wsl2
+
+ubuntu24
