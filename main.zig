@@ -1,0 +1,143 @@
+const std = @import("std");
+const async = @import("async");
+const clap = @import("clap");
+const stdx = @import("stdx");
+const zml = @import("zml");
+const llama = @import("llama.zig");
+
+const LlamaLM = llama.LlamaLM;
+const KvCache = llama.KvCache;
+const log = std.log.scoped(.llama_server);
+
+pub const std_options: std.Options = .{
+    .log_level = .info,
+    .logFn = async.logFn(std.log.defaultLog),
+};
+
+const params = clap.parseParamsComptime(
+    \\--help                      print help
+    \\--hf-model-path  <STRING>   model path
+    \\--port           <UINT>     port (8080)
+    \\--temperature    <FLOAT>    temp (0.7)
+    \\--max-tokens     <UINT>     max tokens
+    \\--seq-len        <UINT>     context len
+    \\--sharding       <BOOL>     sharding
+);
+
+pub fn tokenizePrompt(allocator: std.mem.Allocator, tokenizer: zml.tokenizer.Tokenizer, config: LlamaLM.Config, prompt: []const u8) ![]u32 {
+    var encoder = try tokenizer.encoder();
+    defer encoder.deinit();
+    const encoded = try encoder.encode(prompt);
+    const s_id = tokenizer.tokenToId("<|start_header_id|>") orelse return error.T;
+    const e_id = tokenizer.tokenToId("<|end_header_id|>") orelse return error.T;
+    const user = tokenizer.tokenToId("user") orelse return error.T;
+    const asst = tokenizer.tokenToId("assistant") orelse return error.T;
+    const eot = tokenizer.tokenToId("<|eot_id|>") orelse return error.T;
+    const nl = (try encoder.encode("\n"))[0];
+    const out = try allocator.alloc(u32, encoded.len + 11);
+    out[0] = config.bos_token_id;
+    out[1] = s_id; out[2] = user; out[3] = e_id; out[4] = nl;
+    @memcpy(out[5 .. 5 + encoded.len], encoded);
+    const off = 5 + encoded.len;
+    out[off] = eot; out[off+1] = nl; out[off+2] = s_id; out[off+3] = asst; out[off+4] = e_id; out[off+5] = nl;
+    return out;
+}
+
+pub fn generateResponse(config: LlamaLM.Config, llama_mod: LlamaLM, m_pref: zml.ModuleExe(LlamaLM.forward), m_gen: zml.ModuleExe(LlamaLM.forward), kv_raw: zml.Bufferized(llama.KvCache), tokenizer: zml.tokenizer.Tokenizer, allocator: std.mem.Allocator, seed: u128, prompt: []const u8, max_new: u32, writer: anytype) !void {
+    const prompt_tok = try tokenizePrompt(allocator, tokenizer, config, prompt);
+    defer allocator.free(prompt_tok);
+    var decoder = try tokenizer.decoder();
+    defer decoder.deinit();
+    const platform = m_gen.platform();
+    const max_len = llama_mod.model.max_seq_len;
+    var rng = try zml.Tensor.Rng.init(platform, seed);
+    var t_buf = [_]u32{0};
+    var kv = prefill: {
+        const p_buf = try allocator.alloc(u32, max_len);
+        defer allocator.free(p_buf);
+        @memset(p_buf, 0); @memcpy(p_buf[0..prompt_tok.len], prompt_tok);
+        var p_tokens = try zml.Buffer.fromSlice(platform, .{max_len}, p_buf);
+        defer p_tokens.deinit();
+        var pos = try zml.Buffer.scalar(platform, 0, .u32);
+        defer pos.deinit();
+        const res, const n_kv, const n_rng = m_pref.call(.{ p_tokens, pos, kv_raw, rng });
+        rng = n_rng; _ = try res.toHost(std.mem.sliceAsBytes(p_buf));
+        t_buf[0] = p_buf[prompt_tok.len - 1];
+        break :prefill n_kv;
+    };
+    defer zml.aio.unloadBuffers(&kv);
+    var cur_tok = try zml.Buffer.fromSlice(platform, .{1}, &t_buf);
+    defer cur_tok.deinit();
+    const limit = @min(max_new, @as(u32, @intCast(max_len - prompt_tok.len - 1)));
+    for (0..limit) |i| {
+        if (try decoder.next(t_buf[0])) |chunk| { try writer.writeAll(chunk); }
+        const is_eos = switch (config.eos_token_id.value) {
+            .int => |e| t_buf[0] == @as(u32, @intCast(e)),
+            .ints => |list| blk: {
+                for (list) |e| if (t_buf[0] == @as(u32, @intCast(e))) break :blk true;
+                break :blk false;
+            },
+        };
+        if (is_eos) break;
+        const p_buf = &[_]u32{@intCast(prompt_tok.len + i)};
+        const pos = try zml.Buffer.fromSlice(platform, .{}, p_buf);
+        defer pos.deinit();
+        const next_t, const next_kv, const next_rng = m_gen.call(.{ cur_tok, pos, kv, rng });
+        zml.aio.unloadBuffers(&kv); kv = next_kv; rng = next_rng;
+        cur_tok.deinit(); cur_tok = next_t;
+        _ = try cur_tok.toHost(std.mem.sliceAsBytes(&t_buf));
+    }
+}
+
+pub fn main() !void { try async.AsyncThread.main(std.heap.c_allocator, asyncMain); }
+
+pub fn asyncMain() !void {
+    const allocator = std.heap.c_allocator;
+    const parsers = comptime .{ .BOOL = bool_p, .UINT = clap.parsers.int(u32, 0), .FLOAT = clap.parsers.float(f32), .STRING = clap.parsers.string };
+    var diag: clap.Diagnostic = .{};
+    const cli = clap.parse(clap.Help, &params, parsers, .{ .allocator = allocator, .diagnostic = &diag }) catch |err| {
+        log.err("CLI Error: {any}", .{err}); return;
+    };
+    const hf_path = cli.args.@"hf-model-path" orelse return;
+    const config_path = try std.fs.path.join(allocator, &.{ hf_path, "config.json" });
+    const weights_path = try std.fs.path.join(allocator, &.{ hf_path, "model.safetensors" });
+    const token_path = try std.fs.path.join(allocator, &.{ hf_path, "tokenizer.json" });
+    const config_raw = try std.fs.cwd().readFileAlloc(allocator, config_path, 50 * 1024);
+    const config_p = try std.json.parseFromSlice(LlamaLM.Config, allocator, config_raw, .{ .ignore_unknown_fields = true });
+    const config = config_p.value;
+    var context = try zml.Context.init();
+    const platform = context.autoPlatform(.{}).withCompilationOptions(.{ .sharding_enabled = cli.args.sharding orelse true });
+    const seq_len = cli.args.@"seq-len" orelse 512;
+    const llama_opts: llama.LlamaLM.Options = .{ .max_seq_len = seq_len, .sampling_strategy = .{ .topk = 40, .temperature = cli.args.temperature orelse 0.7 } };
+    log.info("🚀 AI Server is loading...", .{});
+    var store = try zml.aio.detectFormatAndOpen(allocator, weights_path);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const llama_tensors = try LlamaLM.init(arena.allocator(), config, llama_opts, store);
+    const kv_shape = zml.Shape.init(.{ .layer = llama_tensors.model.layers.len, .k = seq_len, .h = config.num_key_value_heads, .hd = config.head_dim orelse (config.hidden_size / config.num_attention_heads) }, .bf16).withSharding(.{.h});
+    const kv_cache_shape = KvCache.initShape(kv_shape);
+    const m_pref = try zml.compileModel(allocator, LlamaLM.forward, llama_tensors, .{ zml.Shape.init(.{ .s = seq_len }, .u32), zml.Shape.init(.{}, .u32), kv_cache_shape, zml.Tensor.Rng.shape() }, platform);
+    const m_gen = try zml.compileModel(allocator, LlamaLM.forward, llama_tensors, .{ zml.Shape.init(.{ .s = 1 }, .u32), zml.Shape.init(.{}, .u32), kv_cache_shape, zml.Tensor.Rng.shape() }, platform);
+    const llama_buffers = try store.loadModelById(LlamaLM, arena.allocator(), llama_tensors, platform);
+    const exe_prefill = m_pref.prepare(llama_buffers);
+    const exe_gen = m_gen.prepare(llama_buffers);
+    const tokenizer = try zml.tokenizer.Tokenizer.fromFile(allocator, token_path);
+    const kv_cache_buf = try KvCache.initBuffer(kv_shape, platform);
+    const port = cli.args.port orelse 8080;
+    const address = std.net.Address.parseIp("0.0.0.0", @as(u16, @intCast(port))) catch unreachable;
+    var listener = try address.listen(.{ .reuse_address = true });
+    log.info("✅ Server UP at port: {d}", .{port});
+    while (true) {
+        var conn = try listener.accept();
+        var req_buf: [2048]u8 = undefined;
+        const n = conn.stream.read(&req_buf) catch 0;
+        if (n == 0) { conn.stream.close(); continue; }
+        const p_raw = std.mem.trim(u8, req_buf[0..n], " \n\r\t");
+        try conn.stream.writeAll("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+        generateResponse(config, llama_tensors, exe_prefill, exe_gen, kv_cache_buf, tokenizer, allocator, @bitCast(std.time.nanoTimestamp()), p_raw, cli.args.@"max-tokens" orelse 128, conn.stream) catch |err| {
+            log.err("Error: {any}", .{err});
+        };
+        conn.stream.close();
+    }
+}
+
+fn bool_p(in: []const u8) error{}!bool { return if (in.len > 0) std.mem.indexOfScalar(u8, "tTyY1", in[0]) != null else false; }
