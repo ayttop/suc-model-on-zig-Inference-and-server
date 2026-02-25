@@ -1,0 +1,556 @@
+الحمد لله
+اشتغل نمو>ج ف لغة زيج 
+واشتغل سرفر
+
+
+
+
+
+git clone https://github.com/zml/zml.git
+cd zml
+https://bazel.build/install/ubuntu
+
+curl -L -o /usr/local/bin/bazel 'https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-linux-amd64'
+chmod +x /usr/local/bin/bazel
+
+nvidia-smi
+nvcc --version
+
+
+sudo apt update
+sudo apt install nvidia-cuda-toolkit
+
+
+
+
+
+https://github.com/zml/zml/blob/master/docs/howtos/deploy_on_server.md
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+GPU
+
+
+
+bazel run --config=release //examples/llama \
+          --@zml//runtimes:cuda=true \
+          -- --hf-model-path=/home/aytto/my_model \
+          --prompt="What is the capital of France?"
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama                       \
+          --@zml//runtimes:cuda=true                     \
+          -- --hf-model-path=/home/aytto/my_model \
+          --prompt="What is the capital of France?"
+WARNING: Build option --//runtimes:cuda has changed, discarding analysis cache (this can be expensive, see https://bazel.build/advanced/performance/iteration-speed).
+INFO: Analyzed target //examples/llama:llama (16 packages loaded, 41147 targets configured).
+INFO: From zig translate-c //examples/llama:llama:
+warning: add 'external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+warning: add 'bazel-out/linux_amd64-opt/bin/external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+INFO: From zig build-lib //examples/llama:llama:
+warning: add 'external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+warning: add 'bazel-out/linux_amd64-opt/bin/external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+INFO: From Linking examples/llama/llama:
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+INFO: Found 1 target...
+Target //examples/llama:llama up-to-date:
+  bazel-bin/examples/llama/llama
+INFO: Elapsed time: 25.186s, Critical Path: 23.29s
+INFO: 8 processes: 4138 action cache hit, 5 internal, 3 linux-sandbox.
+INFO: Build completed successfully, 8 total actions
+INFO: Running command line: bazel-bin/examples/llama/llama <args omitted>
+info(llama):    LLama was compiled with .ReleaseSafe
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/runtimes/cpu/sandbox/lib/libpjrt_cpu.so
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/external/+cuda_packages+libpjrt_cuda/sandbox/lib/libpjrt_cuda.so
+I0225 13:56:59.087898    8474 service.cc:158] XLA service 0x5ee2d2056fa0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0225 13:56:59.087928    8474 service.cc:166]   StreamExecutor device (0): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 13:56:59.087938    8474 service.cc:166]   StreamExecutor device (1): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 13:56:59.089078    8474 se_gpu_pjrt_client.cc:770] Using BFC allocator.
+I0225 13:56:59.089467    8474 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 0 for BFCAllocator.
+I0225 13:56:59.089540    8474 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 1 for BFCAllocator.
+I0225 13:56:59.089594    8474 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 0 for CollectiveBFCAllocator.
+I0225 13:56:59.089654    8474 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 1 for CollectiveBFCAllocator.
+I0225 13:56:59.094975    8474 cuda_dnn.cc:463] Loaded cuDNN version 90800
+info(zml/context): Available Platforms:
+info(zml/context):   •  cpu
+info(zml/context):   ✅ cuda (AUTO-SELECTED)
+info(zml/context):        ◦ #0: NVIDIA GeForce RTX 4060 Ti
+info(zml/context):        ◦ #1: NVIDIA GeForce RTX 4060 Ti
+info(zml/context):   •  rocm
+info(zml/context):   •  tpu
+info(zml/context):   •  neuron
+info(llama):    Loading Llama weights from /home/aytto/my_model/model.safetensors...
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=256,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cuda/llama.LlamaLM.forward_4ca8a8966e336d8a/module.mlir
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cuda/llama.LlamaLM.forward_4372d43a959e68d6/module.mlir
+I0225 13:56:59.979195    9366 dump.cc:583] HloModule dump enabled with path prefix: , suffix: before_optimizations
+W0225 13:57:00.006786    9366 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+W0225 13:57:00.018240    9319 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+I0225 13:57:00.455055    9319 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 391824 bytes. Current limit: 11370244317
+I0225 13:57:00.754858    9366 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 100302864 bytes. Current limit: 11370243348
+I0225 13:57:01.141804    9319 subprocess_compilation.cc:497] Using nvlink for parallel linking
+info(zml/module): Compilation took 1.247s
+info(zml/module): Compilation took 1.471s
+info(llama): ✅ Loaded weights in 2.424s
+info(llama): ✅ Compiled model in 2.424s
+info(llama): Creating KvCache
+info(llama): Loading tokenizer from /home/aytto/my_model/tokenizer.json
+info(llama): Loaded tokenizer from /home/aytto/my_model/tokenizer.json [16.845s]
+info(llama): ✅ Prompt: What is the capital of France?
+The capital of France is Paris.<|eot_id|>
+info(llama): ✅ Generated 9 tokens in 0.082s: 110.218tok/s
+aytto@m:~/zml$
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+CPU
+
+
+
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama -- \
+--hf-model-path=/home/aytto/my_model \
+--prompt="What is the capital of France?"
+INFO: Analyzed target //examples/llama:llama (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //examples/llama:llama up-to-date:
+  bazel-bin/examples/llama/llama
+INFO: Elapsed time: 0.210s, Critical Path: 0.00s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/examples/llama/llama <args omitted>
+info(llama):    LLama was compiled with .ReleaseSafe
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/runtimes/cpu/sandbox/lib/libpjrt_cpu.so
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1772053903.092469    1937 pjrt_c_api_cpu_internal.cc:59] cpu_device_count set via create_options: 4
+info(zml/context): Available Platforms:
+info(zml/context):   ✅ cpu (AUTO-SELECTED)
+info(zml/context):        ◦ #0: cpu
+info(zml/context):   •  cuda
+info(zml/context):   •  rocm
+info(zml/context):   •  tpu
+info(zml/context):   •  neuron
+info(llama):    Loading Llama weights from /home/aytto/my_model/model.safetensors...
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=256,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cpu/llama.LlamaLM.forward_428e30e59894aa4e/module.mlir
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cpu/llama.LlamaLM.forward_2c5857cd95da77c8/module.mlir
+I0000 00:00:1772053903.126093    2477 dump.cc:583] HloModule dump enabled with path prefix: , suffix: before_optimizations
+W0000 00:00:1772053903.145980    2477 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+W0000 00:00:1772053903.147103    2420 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+info(zml/module): Compilation took 1.277s
+info(llama): ✅ Loaded weights in 3.376s
+info(llama): ✅ Compiled model in 3.377s
+info(llama): Creating KvCache
+info(llama): Loading tokenizer from /home/aytto/my_model/tokenizer.json
+info(llama): Loaded tokenizer from /home/aytto/my_model/tokenizer.json [16.762s]
+info(llama): ✅ Prompt: What is the capital of France?
+The capital of France is Paris.<|eot_id|>
+info(llama): ✅ Generated 9 tokens in 11.181s: 0.805tok/s
+
+
+
+
+
+
+
+
+bazel run --config=release //examples/llama -- --help
+
+
+
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama -h
+INFO: Reading rc options for 'run' from /home/aytto/zml/.bazelrc:
+  Inherited 'common' options: --enable_workspace=false --lockfile_mode=update --experimental_repo_remote_exec --experimental_remote_cache_eviction_retries=5 --enable_platform_specific_config --registry=file://%workspace%/third_party/ --registry=https://bazel-registry.zml.ai --registry=https://bcr.bazel.build --host_compilation_mode=opt --copt=-w --host_copt=-w --cxxopt=-std=c++17 --host_cxxopt=-std=c++17 --enable_runfiles --incompatible_strict_action_env --experimental_check_output_files=false --legacy_external_runfiles=false --experimental_output_directory_naming_scheme=diff_against_dynamic_baseline --compilation_mode=dbg --experimental_cc_static_library --experimental_cc_shared_library --incompatible_use_cc_configure_from_rules_cc --experimental_starlark_cc_import --experimental_platform_in_output_dir --compiler=clang --incompatible_enable_proto_toolchain_resolution --incompatible_disallow_empty_glob=false --@rules_zig//zig/settings:use_cc_common_link=True --@rules_zig//zig/settings:zigopt=-fllvm --@toolchains_llvm_bootstrapped//config:experimental_stub_libgcc_s=True
+
+
+
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+server
+
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama \
+--@zml//runtimes:cuda=true -- \
+--hf-model-path=/home/aytto/my_model \
+--sharding=true \
+--port=8080 \
+--temperature=0.8 \
+--max-tokens=200 \
+--seq-len=1024
+INFO: Analyzed target //examples/llama:llama (0 packages loaded, 0 targets configured).
+INFO: From zig build-lib //examples/llama:llama:
+warning: add 'external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+warning: add 'bazel-out/linux_amd64-opt/bin/external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+INFO: From Linking examples/llama/llama:
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+INFO: Found 1 target...
+Target //examples/llama:llama up-to-date:
+  bazel-bin/examples/llama/llama
+INFO: Elapsed time: 21.848s, Critical Path: 21.68s
+INFO: 3 processes: 1 internal, 2 linux-sandbox.
+INFO: Build completed successfully, 3 total actions
+INFO: Running command line: bazel-bin/examples/llama/llama <args omitted>
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/runtimes/cpu/sandbox/lib/libpjrt_cpu.so
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/external/+cuda_packages+libpjrt_cuda/sandbox/lib/libpjrt_cuda.so
+I0225 15:07:33.952943   24456 service.cc:158] XLA service 0x6331b9df6fe0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0225 15:07:33.952969   24456 service.cc:166]   StreamExecutor device (0): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 15:07:33.952971   24456 service.cc:166]   StreamExecutor device (1): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 15:07:33.953830   24456 se_gpu_pjrt_client.cc:770] Using BFC allocator.
+I0225 15:07:33.954027   24456 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 0 for BFCAllocator.
+I0225 15:07:33.954093   24456 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 1 for BFCAllocator.
+I0225 15:07:33.954168   24456 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 0 for CollectiveBFCAllocator.
+I0225 15:07:33.954228   24456 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 1 for CollectiveBFCAllocator.
+I0225 15:07:33.960670   24456 cuda_dnn.cc:463] Loaded cuDNN version 90800
+info(llama_server): 🚀 AI Server is loading...
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1024,u32}, {u32}, .{ .k = {layer=16,k=1024,h=8!,hd=64,bf16}, .v = {layer=16,k=1024,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+W0225 15:07:34.043244   24994 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+I0225 15:07:34.935113   24994 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 2382184464 bytes. Current limit: 11358286663
+I0225 15:07:35.946040   24994 subprocess_compilation.cc:497] Using nvlink for parallel linking
+info(zml/module): Compilation took 2.021s
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1,u32}, {u32}, .{ .k = {layer=16,k=1024,h=8!,hd=64,bf16}, .v = {layer=16,k=1024,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+W0225 15:07:36.035719   24994 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+I0225 15:07:36.519244   24994 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 2326304 bytes. Current limit: 11358290551
+info(zml/module): Compilation took 1.688s
+info(llama_server): ✅ Server UP at port: 8080
+error(zml): InvalidArgument Buffer has been deleted or donated.
+error(llama_server): Error: error.InvalidArgument
+error(zml): InvalidArgument Buffer has been deleted or donated.
+error(llama_server): Error: error.InvalidArgument
+error(zml): InvalidArgument Buffer has been deleted or donated.
+error(llama_server): Error: error.InvalidArgument
+^C^C
+aytto@m:~/zml$
+
+
+
+
+termenal2
+
+
+aytto@m:~$ curl http://localhost:8080 -d "What is the capital of France?"
+Bonjour! The capital of France is Paris.<|eot_id|>aytto@m:~$
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+server2
+
+
+const std = @import("std");
+const async = @import("async");
+const clap = @import("clap");
+const stdx = @import("stdx");
+const zml = @import("zml");
+const llama = @import("llama.zig");
+
+const LlamaLM = llama.LlamaLM;
+const KvCache = llama.KvCache;
+const log = std.log.scoped(.llama_server);
+
+pub const std_options: std.Options = .{
+    .log_level = .info,
+    .logFn = async.logFn(std.log.defaultLog),
+};
+
+const params = clap.parseParamsComptime(
+    \\--help                      print help
+    \\--hf-model-path  <STRING>   model path
+    \\--port           <UINT>     port (8080)
+    \\--temperature    <FLOAT>    temp (0.7)
+    \\--max-tokens     <UINT>     max tokens
+    \\--seq-len        <UINT>     context len
+    \\--sharding       <BOOL>     sharding
+);
+
+pub fn tokenizePrompt(allocator: std.mem.Allocator, tokenizer: zml.tokenizer.Tokenizer, config: LlamaLM.Config, prompt: []const u8) ![]u32 {
+    var encoder = try tokenizer.encoder();
+    defer encoder.deinit();
+    const encoded = try encoder.encode(prompt);
+    const s_id = tokenizer.tokenToId("<|start_header_id|>") orelse return error.T;
+    const e_id = tokenizer.tokenToId("<|end_header_id|>") orelse return error.T;
+    const user = tokenizer.tokenToId("user") orelse return error.T;
+    const asst = tokenizer.tokenToId("assistant") orelse return error.T;
+    const eot = tokenizer.tokenToId("<|eot_id|>") orelse return error.T;
+    const nl = (try encoder.encode("\n"))[0];
+    const out = try allocator.alloc(u32, encoded.len + 11);
+    out[0] = config.bos_token_id;
+    out[1] = s_id; out[2] = user; out[3] = e_id; out[4] = nl;
+    @memcpy(out[5 .. 5 + encoded.len], encoded);
+    const off = 5 + encoded.len;
+    out[off] = eot; out[off+1] = nl; out[off+2] = s_id; out[off+3] = asst; out[off+4] = e_id; out[off+5] = nl;
+    return out;
+}
+
+pub fn generateResponse(config: LlamaLM.Config, llama_mod: LlamaLM, m_pref: zml.ModuleExe(LlamaLM.forward), m_gen: zml.ModuleExe(LlamaLM.forward), kv_raw: zml.Bufferized(llama.KvCache), tokenizer: zml.tokenizer.Tokenizer, allocator: std.mem.Allocator, seed: u128, prompt: []const u8, max_new: u32, writer: anytype) !void {
+    const prompt_tok = try tokenizePrompt(allocator, tokenizer, config, prompt);
+    defer allocator.free(prompt_tok);
+    var decoder = try tokenizer.decoder();
+    defer decoder.deinit();
+    const platform = m_gen.platform();
+    const max_len = llama_mod.model.max_seq_len;
+    var rng_val = try zml.Tensor.Rng.init(platform, seed);
+    var t_buf = [_]u32{0};
+    
+    var kv_loop = prefill: {
+        const p_buf = try allocator.alloc(u32, max_len);
+        defer allocator.free(p_buf);
+        @memset(p_buf, 0); @memcpy(p_buf[0..prompt_tok.len], prompt_tok);
+        var p_tokens = try zml.Buffer.fromSlice(platform, .{max_len}, p_buf);
+        defer p_tokens.deinit();
+        var pos = try zml.Buffer.scalar(platform, 0, .u32);
+        defer pos.deinit();
+        const res, const n_kv, const n_rng = m_pref.call(.{ p_tokens, pos, kv_raw, rng_val });
+        rng_val = n_rng; 
+        _ = try res.toHost(std.mem.sliceAsBytes(p_buf));
+        t_buf[0] = p_buf[prompt_tok.len - 1];
+        break :prefill n_kv;
+    };
+
+    var cur_tok = try zml.Buffer.fromSlice(platform, .{1}, &t_buf);
+    defer cur_tok.deinit();
+    const limit = @min(max_new, @as(u32, @intCast(max_len - prompt_tok.len - 1)));
+    
+    for (0..limit) |i| {
+        if (try decoder.next(t_buf[0])) |chunk| { try writer.writeAll(chunk); }
+        const is_eos = switch (config.eos_token_id.value) {
+            .int => |e| t_buf[0] == @as(u32, @intCast(e)),
+            .ints => |list| blk: {
+                for (list) |e| if (t_buf[0] == @as(u32, @intCast(e))) break :blk true;
+                break :blk false;
+            },
+        };
+        if (is_eos) break;
+        const p_pos_buf = &[_]u32{@intCast(prompt_tok.len + i)};
+        const pos = try zml.Buffer.fromSlice(platform, .{}, p_pos_buf);
+        defer pos.deinit();
+        
+        const next_t, const next_kv, const next_rng = m_gen.call(.{ cur_tok, pos, kv_loop, rng_val });
+        
+        zml.aio.unloadBuffers(&kv_loop);
+        kv_loop = next_kv; 
+        rng_val = next_rng;
+        
+        cur_tok.deinit(); 
+        cur_tok = next_t;
+        _ = try cur_tok.toHost(std.mem.sliceAsBytes(&t_buf));
+    }
+    zml.aio.unloadBuffers(&kv_loop);
+}
+
+pub fn main() !void { try async.AsyncThread.main(std.heap.c_allocator, asyncMain); }
+
+pub fn asyncMain() !void {
+    const allocator = std.heap.c_allocator;
+    const parsers = comptime .{ .BOOL = bool_p, .UINT = clap.parsers.int(u32, 0), .FLOAT = clap.parsers.float(f32), .STRING = clap.parsers.string };
+    var diag: clap.Diagnostic = .{};
+    const cli = clap.parse(clap.Help, &params, parsers, .{ .allocator = allocator, .diagnostic = &diag }) catch |err| {
+        log.err("CLI Error: {any}", .{err});
+        return;
+    };
+    const hf_path = cli.args.@"hf-model-path" orelse return;
+    const config_path = try std.fs.path.join(allocator, &.{ hf_path, "config.json" });
+    const weights_path = try std.fs.path.join(allocator, &.{ hf_path, "model.safetensors" });
+    const token_path = try std.fs.path.join(allocator, &.{ hf_path, "tokenizer.json" });
+    const config_raw = try std.fs.cwd().readFileAlloc(allocator, config_path, 50 * 1024);
+    const config_p = try std.json.parseFromSlice(LlamaLM.Config, allocator, config_raw, .{ .ignore_unknown_fields = true });
+    const config = config_p.value;
+    var context = try zml.Context.init();
+    const platform = context.autoPlatform(.{}).withCompilationOptions(.{ .sharding_enabled = cli.args.sharding orelse true });
+    const seq_len = cli.args.@"seq-len" orelse 512;
+    const llama_opts: llama.LlamaLM.Options = .{ .max_seq_len = seq_len, .sampling_strategy = .{ .topk = 40, .temperature = cli.args.temperature orelse 0.7 } };
+    log.info("🚀 AI Server is loading...", .{});
+    var store = try zml.aio.detectFormatAndOpen(allocator, weights_path);
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    const llama_tensors = try LlamaLM.init(arena.allocator(), config, llama_opts, store);
+    const kv_shape = zml.Shape.init(.{ .layer = llama_tensors.model.layers.len, .k = seq_len, .h = config.num_key_value_heads, .hd = config.head_dim orelse (config.hidden_size / config.num_attention_heads) }, .bf16).withSharding(.{.h});
+    const kv_cache_shape = KvCache.initShape(kv_shape);
+    const m_pref = try zml.compileModel(allocator, LlamaLM.forward, llama_tensors, .{ zml.Shape.init(.{ .s = seq_len }, .u32), zml.Shape.init(.{}, .u32), kv_cache_shape, zml.Tensor.Rng.shape() }, platform);
+    const m_gen = try zml.compileModel(allocator, LlamaLM.forward, llama_tensors, .{ zml.Shape.init(.{ .s = 1 }, .u32), zml.Shape.init(.{}, .u32), kv_cache_shape, zml.Tensor.Rng.shape() }, platform);
+    const llama_buffers = try store.loadModelById(LlamaLM, arena.allocator(), llama_tensors, platform);
+    const exe_prefill = m_pref.prepare(llama_buffers);
+    const exe_gen = m_gen.prepare(llama_buffers);
+    const tokenizer = try zml.tokenizer.Tokenizer.fromFile(allocator, token_path);
+    const port_val = cli.args.port orelse 8080;
+    const address = std.net.Address.parseIp("0.0.0.0", @as(u16, @intCast(port_val))) catch unreachable;
+    var listener = try address.listen(.{ .reuse_address = true });
+    log.info("✅ Server UP", .{});
+    while (true) {
+        var conn = try listener.accept();
+        var req_buf: [2048]u8 = undefined;
+        const n = conn.stream.read(&req_buf) catch 0;
+        if (n == 0) { conn.stream.close(); continue; }
+        const p_raw = std.mem.trim(u8, req_buf[0..n], " \n\r\t");
+        
+        // تحويل إلى const لإرضاء المترجم
+        const request_kv_cache = try KvCache.initBuffer(kv_shape, platform);
+        
+        try conn.stream.writeAll("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
+        generateResponse(config, llama_tensors, exe_prefill, exe_gen, request_kv_cache, tokenizer, allocator, @bitCast(std.time.nanoTimestamp()), p_raw, cli.args.@"max-tokens" orelse 128, conn.stream) catch |err| {
+            log.err("Generation Error: {any}", .{err});
+        };
+        conn.stream.close();
+    }
+}
+
+fn bool_p(in: []const u8) error{}!bool { return if (in.len > 0) std.mem.indexOfScalar(u8, "tTyY1", in[0]) != null else false; }
+
+
+
+
+
+
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama \
+--@zml//runtimes:cuda=true -- \
+--hf-model-path=/home/aytto/my_model \
+--sharding=true \
+--port=8080 \
+--temperature=0.8 \
+--max-tokens=200 \
+--seq-len=1024
+INFO: Analyzed target //examples/llama:llama (0 packages loaded, 0 targets configured).
+INFO: From zig build-lib //examples/llama:llama:
+warning: add 'external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+warning: add 'bazel-out/linux_amd64-opt/bin/external/+non_module_deps+com_google_sentencepiece' to header searchlist '-isystem' conflicts with '-I'
+INFO: From Linking examples/llama/llama:
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+clang++: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
+INFO: Found 1 target...
+Target //examples/llama:llama up-to-date:
+  bazel-bin/examples/llama/llama
+INFO: Elapsed time: 21.068s, Critical Path: 20.89s
+INFO: 3 processes: 1 internal, 2 linux-sandbox.
+INFO: Build completed successfully, 3 total actions
+INFO: Running command line: bazel-bin/examples/llama/llama <args omitted>
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/runtimes/cpu/sandbox/lib/libpjrt_cpu.so
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/external/+cuda_packages+libpjrt_cuda/sandbox/lib/libpjrt_cuda.so
+I0225 15:26:12.479431   28051 service.cc:158] XLA service 0x646f8ab3eaa0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0225 15:26:12.479463   28051 service.cc:166]   StreamExecutor device (0): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 15:26:12.479473   28051 service.cc:166]   StreamExecutor device (1): NVIDIA GeForce RTX 4060 Ti, Compute Capability 8.9
+I0225 15:26:12.480306   28051 se_gpu_pjrt_client.cc:770] Using BFC allocator.
+I0225 15:26:12.480521   28051 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 0 for BFCAllocator.
+I0225 15:26:12.480600   28051 gpu_helpers.cc:136] XLA backend allocating 15457635123 bytes on device 1 for BFCAllocator.
+I0225 15:26:12.480668   28051 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 0 for CollectiveBFCAllocator.
+I0225 15:26:12.480724   28051 gpu_helpers.cc:177] XLA backend will use up to 1717515468 bytes on device 1 for CollectiveBFCAllocator.
+I0225 15:26:12.486935   28051 cuda_dnn.cc:463] Loaded cuDNN version 90800
+info(llama_server): 🚀 AI Server is loading...
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1024,u32}, {u32}, .{ .k = {layer=16,k=1024,h=8!,hd=64,bf16}, .v = {layer=16,k=1024,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+W0225 15:26:12.563443   28590 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+I0225 15:26:13.455913   28590 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 2382184464 bytes. Current limit: 11358286663
+I0225 15:26:14.976788   28590 subprocess_compilation.cc:497] Using nvlink for parallel linking
+info(zml/module): Compilation took 2.002s
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1,u32}, {u32}, .{ .k = {layer=16,k=1024,h=8!,hd=64,bf16}, .v = {layer=16,k=1024,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+W0225 15:26:15.074781   28590 sharding_propagation.cc:3127] GSPMD sharding propagation is going to be deprecated and not supported in the future. Please consider migrating to Shardy (https://openxla.org/shardy). For reference, Shardy is already the default partitioner in JAX.
+I0225 15:26:15.557635   28590 latency_hiding_scheduler.cc:3702] [latency-hiding-scheduler] LatencyHidingScheduler current memory usage: 2326304 bytes. Current limit: 11358290551
+info(zml/module): Compilation took 1.692s
+info(llama_server): ✅ Server UP
+^C^C
+aytto@m:~/zml$
+
+
+
+
+
+
+
+termenal2
+
+
+
+ 
+curlhttp://localhost:8080−d"Whatiszig?"Zigisahigh−performance,open−source,compiledlanguagethatcombinesthepowerofCandRustwiththesafetyandmodernityofRust.ItwasdesignedbyRobertHolmesandPaulHammersley.Zig 
+′
+ suniqueapproachtocompilationandmemorylayoutallowsittobefasterthanC,whileitssafetyfeaturesaredesignedtopreventcommonprogrammingerrors.<∣eot 
+i
+​
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+
+aytto@m:~/zml$ bazel run --config=release //examples/llama -- \
+--hf-model-path=/home/aytto/my_model \
+--sharding=true \
+--prompt="Explain quantum physics in one sentence."
+INFO: Analyzed target //examples/llama:llama (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //examples/llama:llama up-to-date:
+  bazel-bin/examples/llama/llama
+INFO: Elapsed time: 0.141s, Critical Path: 0.00s
+INFO: 1 process: 1 internal.
+INFO: Build completed successfully, 1 total action
+INFO: Running command line: bazel-bin/examples/llama/llama <args omitted>
+info(llama):    LLama was compiled with .ReleaseSafe
+info(pjrt): Loaded library: /home/aytto/.cache/bazel/_bazel_aytto/5caafa30c16352e2826625e2176e020d/execroot/_main/bazel-out/linux_amd64-opt/bin/runtimes/cpu/sandbox/lib/libpjrt_cpu.so
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1772054297.327291    3211 pjrt_c_api_cpu_internal.cc:59] cpu_device_count set via create_options: 4
+info(zml/context): Available Platforms:
+info(zml/context):   ✅ cpu (AUTO-SELECTED)
+info(zml/context):        ◦ #0: cpu
+info(zml/context):   •  cuda
+info(zml/context):   •  rocm
+info(zml/context):   •  tpu
+info(zml/context):   •  neuron
+info(llama):    Loading Llama weights from /home/aytto/my_model/model.safetensors...
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=1,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/exe): Compiling llama.LlamaLM.forward with .{ {s=256,u32}, {u32}, .{ .k = {layer=16,k=256,h=8!,hd=64,bf16}, .v = {layer=16,k=256,h=8!,hd=64,bf16}, .layer_index = {u32} }, .{ ._state = {2,u64}, .algorithm = .DEFAULT } }
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cpu/llama.LlamaLM.forward_428e30e59894aa4e/module.mlir
+info(zml/module): Wrote MLIR to /tmp/zml/llama/cpu/llama.LlamaLM.forward_2c5857cd95da77c8/module.mlir
+I0000 00:00:1772054297.511337    3689 dump.cc:583] HloModule dump enabled with path prefix: , suffix: after_optimizations
+info(zml/module): Loaded pre-compiled module from /tmp/zml/llama/cpu/llama.LlamaLM.forward_428e30e59894aa4e/module.pjrt (generated from /tmp/zml/llama/cpu/llama.LlamaLM.forward_428e30e59894aa4e/module.mlir)
+info(zml/module): Loaded pre-compiled module from /tmp/zml/llama/cpu/llama.LlamaLM.forward_2c5857cd95da77c8/module.pjrt (generated from /tmp/zml/llama/cpu/llama.LlamaLM.forward_2c5857cd95da77c8/module.mlir)
+info(llama): ✅ Loaded weights in 902.44ms
+info(llama): ✅ Compiled model in 902.871ms
+info(llama): Creating KvCache
+info(llama): Loading tokenizer from /home/aytto/my_model/tokenizer.json
+info(llama): Loaded tokenizer from /home/aytto/my_model/tokenizer.json [16.538s]
+info(llama): ✅ Prompt: Explain quantum physics in one sentence.
+Quantum physics is a branch of physics that describes the behavior of matter and energy at the smallest scales, where the classical laws of physics no longer apply and strange, seemingly random phenomena govern the behavior of particles at the atomic and sub^C
+
+
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
